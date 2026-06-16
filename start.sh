@@ -1,8 +1,11 @@
 #!/bin/bash
-# Start FastAPI on internal port 8000
-uvicorn app:app --host 0.0.0.0 --port 8000 &
+# FastAPI on 127.0.0.1 only — internal, not visible to Railway's router
+uvicorn app:app --host 127.0.0.1 --port 8000 &
 
-# Start Streamlit on Railway's dynamic PORT (defaults to 8501 locally)
+# Wait for FastAPI to be ready before Streamlit starts
+sleep 5
+
+# Streamlit on 0.0.0.0:$PORT — this is the only public-facing service
 streamlit run demo.py \
   --server.port "${PORT:-8501}" \
   --server.address 0.0.0.0 \

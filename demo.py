@@ -231,7 +231,7 @@ with st.sidebar:
     st.markdown("### ⚙️ وضعیت سیستم")
 
     try:
-        health = requests.get("http://localhost:8000/health", timeout=3)
+        health = requests.get("http://127.0.0.1:8000/health", timeout=3)
         if health.status_code == 200:
             st.success("API: آنلاین ✅")
         else:
