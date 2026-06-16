@@ -1,0 +1,27 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Environment secrets — never commit this
+.env
+
+# ChromaDB vector store (rebuilt automatically on startup)
+vector_store/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Generated PDFs (recreated on startup)
+data/*.pdf
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
