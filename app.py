@@ -1,5 +1,6 @@
 import os
 import sys
+import threading
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,10 +8,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from routes.chat import router
 
-
-# ---------------------------------------------------------------------------
-# Auto-generate sample PDFs if the data directory is empty
-# ---------------------------------------------------------------------------
 
 def _ensure_sample_pdfs() -> None:
     """Generate sample HR PDFs on first run if none exist yet."""
@@ -20,55 +17,59 @@ def _ensure_sample_pdfs() -> None:
     has_pdfs = any(f.lower().endswith(".pdf") for f in os.listdir(data_dir))
     if not has_pdfs:
         print("[Startup] No PDFs found — generating sample HR documents...")
-        # Resolve the generator script relative to this file
         generate_script = os.path.join(
             os.path.dirname(__file__), "data", "generate_pdfs.py"
         )
         if not os.path.isfile(generate_script):
-            print(
-                "[Startup] WARNING: data/generate_pdfs.py not found. "
-                "Place PDF files in the data/ directory manually."
-            )
+            print("[Startup] WARNING: data/generate_pdfs.py not found.")
             return
-        # Run the generator in the same Python interpreter
         import runpy
         runpy.run_path(generate_script, run_name="__main__")
         print("[Startup] Sample PDFs generated.")
 
 
-# ---------------------------------------------------------------------------
-# Lifespan — runs once at startup and once at shutdown
-# ---------------------------------------------------------------------------
+def _build_vector_store_background(app: FastAPI) -> None:
+    """
+    Build or load ChromaDB in a background thread so the HTTP server
+    starts immediately and Railway's health check passes right away.
+    The /chat route returns 503 until the store is ready.
+    """
+    try:
+        print("[RAG] Initialising vector store in background...")
+        _ensure_sample_pdfs()
+        from services.rag_service import get_or_create_vector_store
+        app.state.vector_store = get_or_create_vector_store()
+        app.state.ready = True
+        print("[RAG] Vector store ready — agent is fully operational.")
+    except Exception as exc:
+        print(f"[RAG] ERROR building vector store: {exc}")
+        app.state.ready = False
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Startup:
-      1. Validate config (API key present)
-      2. Ensure sample PDFs exist
-      3. Build or load the ChromaDB vector store
-      4. Attach it to app.state so all routes can access it
-
-    Shutdown:
-      - Nothing to clean up (ChromaDB is file-based)
-    """
     print("[Startup] Acme HR Agent is initialising...")
 
-    # 1 — Config validation
+    # Validate API key before doing anything else
     try:
         settings.validate()
     except ValueError as exc:
         print(f"[Startup] FATAL: {exc}")
         sys.exit(1)
 
-    # 2 — PDFs
-    _ensure_sample_pdfs()
+    # Mark as not ready until the background thread finishes
+    app.state.ready = False
+    app.state.vector_store = None
 
-    # 3 — Vector store
-    from services.rag_service import get_or_create_vector_store
-    app.state.vector_store = get_or_create_vector_store()
+    # Build vector store in background — server starts instantly
+    thread = threading.Thread(
+        target=_build_vector_store_background,
+        args=(app,),
+        daemon=True,
+    )
+    thread.start()
 
-    print("[Startup] HR Agent is ready. Visit http://127.0.0.1:8000/docs")
+    print("[Startup] Server is up. Vector store loading in background...")
     yield
     print("[Shutdown] HR Agent stopped.")
 
@@ -89,7 +90,6 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# CORS — open during development; restrict origins in production
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -98,5 +98,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register all routes
 app.include_router(router)

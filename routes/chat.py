@@ -44,6 +44,14 @@ async def health() -> StatusResponse:
     return StatusResponse(status="healthy")
 
 
+@router.get("/ready", response_model=StatusResponse, tags=["Health"])
+async def ready(request: Request) -> StatusResponse:
+    """Returns 'ready' once the vector store has finished loading."""
+    if getattr(request.app.state, "ready", False):
+        return StatusResponse(status="ready")
+    raise HTTPException(status_code=503, detail="Vector store is still loading.")
+
+
 @router.post("/chat", response_model=ChatResponse, tags=["Chat"])
 async def chat(request: Request, body: ChatRequest) -> ChatResponse:
     """
@@ -53,7 +61,16 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
     - Sends context + question to the LLM via OpenRouter.
     - Returns the answer and the source PDF filenames that backed it.
     """
-    # The vector store is attached to app.state at startup (see app.py)
+    # Return a friendly message while the vector store is still building
+    if not getattr(request.app.state, "ready", False):
+        return ChatResponse(
+            answer=(
+                "The HR Agent is still loading documents. "
+                "Please wait 30–60 seconds and try again."
+            ),
+            sources=[],
+        )
+
     vector_store = request.app.state.vector_store
 
     from services.llm_service import answer_question
