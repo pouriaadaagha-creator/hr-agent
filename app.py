@@ -4,6 +4,8 @@ import threading
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from config import settings
 from routes.chat import router
@@ -99,3 +101,13 @@ app.add_middleware(
 )
 
 app.include_router(router)
+
+# Serve the chat UI at the root URL
+@app.get("/ui", include_in_schema=False)
+async def serve_ui() -> FileResponse:
+    return FileResponse(os.path.join(os.path.dirname(__file__), "static", "index.html"))
+
+# Redirect root to the chat UI
+@app.get("/", include_in_schema=False)
+async def root() -> FileResponse:
+    return FileResponse(os.path.join(os.path.dirname(__file__), "static", "index.html"))

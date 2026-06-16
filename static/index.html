@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>دستیار منابع انسانی</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Tahoma', 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    .container { width: 100%; max-width: 780px; }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #1e3c78, #2a5298);
+      border-radius: 16px;
+      padding: 28px 32px;
+      text-align: center;
+      color: white;
+      margin-bottom: 20px;
+    }
+    .header h1 { font-size: 1.8rem; font-weight: 700; }
+    .header p  { margin-top: 6px; opacity: 0.85; font-size: 0.95rem; }
+
+    /* Status bar */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: white;
+      border-radius: 10px;
+      padding: 10px 16px;
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+      color: #555;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .status-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: #ccc;
+      flex-shrink: 0;
+    }
+    .status-dot.online  { background: #22c55e; }
+    .status-dot.loading { background: #f59e0b; }
+    .status-dot.offline { background: #ef4444; }
+
+    /* Sample questions */
+    .samples-title {
+      font-size: 0.9rem;
+      color: #555;
+      margin-bottom: 10px;
+      padding-right: 4px;
+    }
+    .samples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .sample-btn {
+      background: white;
+      border: 1.5px solid #2a5298;
+      color: #2a5298;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.2s;
+      direction: rtl;
+    }
+    .sample-btn:hover {
+      background: #2a5298;
+      color: white;
+    }
+
+    /* Chat window */
+    .chat-window {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      min-height: 380px;
+      max-height: 480px;
+      overflow-y: auto;
+      padding: 20px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .empty-state {
+      margin: auto;
+      text-align: center;
+      color: #aaa;
+      font-size: 0.95rem;
+    }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 8px; }
+
+    /* Messages */
+    .msg { display: flex; gap: 10px; align-items: flex-start; }
+    .msg.user  { flex-direction: row-reverse; }
+    .msg.assistant { flex-direction: row; }
+
+    .avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .msg.user .avatar      { background: #dbeafe; }
+    .msg.assistant .avatar { background: #e8f0fe; }
+
+    .bubble {
+      max-width: 75%;
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 0.92rem;
+      line-height: 1.6;
+      direction: rtl;
+    }
+    .msg.user .bubble {
+      background: #2a5298;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+    .msg.assistant .bubble {
+      background: #f1f5f9;
+      color: #1e293b;
+      border-bottom-left-radius: 4px;
+      direction: ltr;
+      text-align: left;
+    }
+
+    .sources {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .source-badge {
+      background: #e8f0fe;
+      color: #1e3c78;
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* Typing indicator */
+    .typing .bubble {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 14px 18px;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #94a3b8;
+      animation: bounce 1.2s infinite;
+    }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30%            { transform: translateY(-6px); }
+    }
+
+    /* Input area */
+    .input-area {
+      display: flex;
+      gap: 10px;
+      background: white;
+      border-radius: 12px;
+      padding: 10px 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .input-area textarea {
+      flex: 1;
+      border: none;
+      outline: none;
+      resize: none;
+      font-family: inherit;
+      font-size: 0.95rem;
+      direction: rtl;
+      line-height: 1.5;
+      max-height: 120px;
+      overflow-y: auto;
+      background: transparent;
+    }
+    .send-btn {
+      background: #2a5298;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 18px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      align-self: flex-end;
+      white-space: nowrap;
+    }
+    .send-btn:hover    { background: #1e3c78; }
+    .send-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    /* Clear button */
+    .clear-btn {
+      background: none;
+      border: 1px solid #e2e8f0;
+      color: #94a3b8;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      margin-bottom: 10px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .clear-btn:hover { color: #ef4444; border-color: #ef4444; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>🏢 دستیار منابع انسانی</h1>
+    <p>سوالات خود را درباره قوانین شرکت، مرخصی، بیمه و بیشتر بپرسید</p>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar">
+    <div class="status-dot loading" id="statusDot"></div>
+    <span id="statusText">در حال بارگذاری...</span>
+  </div>
+
+  <!-- Sample questions -->
+  <div class="samples-title">💡 سوالات نمونه — برای پرسیدن کلیک کنید</div>
+  <div class="samples" id="samples"></div>
+
+  <!-- Clear -->
+  <button class="clear-btn" onclick="clearChat()">🗑️ پاک کردن چت</button>
+
+  <!-- Chat window -->
+  <div class="chat-window" id="chatWindow">
+    <div class="empty-state" id="emptyState">
+      <div class="icon">💬</div>
+      <div>سوال خود را بنویسید یا از نمونه‌ها انتخاب کنید</div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-area">
+    <button class="send-btn" id="sendBtn" onclick="sendMessage()">ارسال ↩</button>
+    <textarea
+      id="inputBox"
+      rows="1"
+      placeholder="سوال خود را اینجا بنویسید..."
+      onkeydown="handleKey(event)"
+      oninput="autoResize(this)"
+    ></textarea>
+  </div>
+
+</div>
+
+<script>
+  const SAMPLES = [
+    { fa: "چند روز مرخصی سالانه داریم؟",          en: "How many annual leave days do employees have?" },
+    { fa: "ساعات کاری شرکت چیست؟",                 en: "What are the working hours?" },
+    { fa: "نرخ اضافه‌کاری آخر هفته چقدر است؟",     en: "What is the overtime pay rate on weekends?" },
+    { fa: "بیمه درمانی از چه زمانی فعال می‌شود؟",  en: "When does health insurance activate?" },
+    { fa: "آیا اعضای خانواده تحت پوشش بیمه‌اند؟", en: "Are dependents covered under the insurance plan?" },
+    { fa: "سیاست دورکاری چگونه است؟",              en: "How does the remote work policy work?" },
+    { fa: "دوره آزمایشی چند ماه است؟",             en: "What is the probation period for new employees?" },
+    { fa: "روز اول کاری چه باید انجام دهم؟",       en: "What happens on the first day of work?" },
+    { fa: "چند روز مرخصی استعلاجی داریم؟",         en: "How many sick leave days are allowed per year?" },
+    { fa: "مرخصی ازدواج چند روز است؟",             en: "How many days of marriage leave do employees get?" },
+  ];
+
+  // Render sample buttons
+  const samplesEl = document.getElementById("samples");
+  SAMPLES.forEach(({ fa, en }) => {
+    const btn = document.createElement("button");
+    btn.className = "sample-btn";
+    btn.textContent = fa;
+    btn.onclick = () => askQuestion(fa, en);
+    samplesEl.appendChild(btn);
+  });
+
+  // Check API status every 5 seconds
+  async function checkStatus() {
+    const dot  = document.getElementById("statusDot");
+    const text = document.getElementById("statusText");
+    try {
+      const r = await fetch("/health");
+      if (r.ok) {
+        // Check if vector store is ready
+        const rr = await fetch("/ready");
+        if (rr.ok) {
+          dot.className  = "status-dot online";
+          text.textContent = "✅ سیستم آماده است";
+        } else {
+          dot.className  = "status-dot loading";
+          text.textContent = "⏳ در حال بارگذاری اسناد... (لطفاً صبر کنید)";
+          setTimeout(checkStatus, 5000);
+        }
+      } else {
+        dot.className  = "status-dot offline";
+        text.textContent = "❌ سرور در دسترس نیست";
+        setTimeout(checkStatus, 5000);
+      }
+    } catch {
+      dot.className  = "status-dot offline";
+      text.textContent = "❌ سرور در دسترس نیست";
+      setTimeout(checkStatus, 5000);
+    }
+  }
+  checkStatus();
+
+  function handleKey(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function autoResize(el) {
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }
+
+  function sendMessage() {
+    const box = document.getElementById("inputBox");
+    const text = box.value.trim();
+    if (!text) return;
+    box.value = "";
+    box.style.height = "auto";
+    askQuestion(text, text);
+  }
+
+  function askQuestion(displayText, queryText) {
+    hideEmpty();
+    addMessage("user", displayText);
+    const typingId = addTyping();
+    document.getElementById("sendBtn").disabled = true;
+
+    fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: queryText }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      removeTyping(typingId);
+      addMessage("assistant", data.answer, data.sources || []);
+      document.getElementById("sendBtn").disabled = false;
+    })
+    .catch(() => {
+      removeTyping(typingId);
+      addMessage("assistant", "خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.");
+      document.getElementById("sendBtn").disabled = false;
+    });
+  }
+
+  function addMessage(role, text, sources = []) {
+    const win = document.getElementById("chatWindow");
+    const msg = document.createElement("div");
+    msg.className = `msg ${role}`;
+
+    const avatar = document.createElement("div");
+    avatar.className = "avatar";
+    avatar.textContent = role === "user" ? "👤" : "🏢";
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = text;
+
+    if (sources.length) {
+      const srcDiv = document.createElement("div");
+      srcDiv.className = "sources";
+      sources.forEach(s => {
+        const badge = document.createElement("span");
+        badge.className = "source-badge";
+        badge.textContent = "📄 " + s;
+        srcDiv.appendChild(badge);
+      });
+      bubble.appendChild(srcDiv);
+    }
+
+    msg.appendChild(avatar);
+    msg.appendChild(bubble);
+    win.appendChild(msg);
+    win.scrollTop = win.scrollHeight;
+  }
+
+  function addTyping() {
+    const win = document.getElementById("chatWindow");
+    const id  = "typing-" + Date.now();
+    const msg = document.createElement("div");
+    msg.className = "msg assistant typing";
+    msg.id = id;
+    msg.innerHTML = `
+      <div class="avatar">🏢</div>
+      <div class="bubble">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>`;
+    win.appendChild(msg);
+    win.scrollTop = win.scrollHeight;
+    return id;
+  }
+
+  function removeTyping(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  }
+
+  function hideEmpty() {
+    const el = document.getElementById("emptyState");
+    if (el) el.remove();
+  }
+
+  function clearChat() {
+    const win = document.getElementById("chatWindow");
+    win.innerHTML = `<div class="empty-state" id="emptyState">
+      <div class="icon">💬</div>
+      <div>سوال خود را بنویسید یا از نمونه‌ها انتخاب کنید</div>
+    </div>`;
+  }
+</script>
+</body>
+</html>

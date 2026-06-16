@@ -11,3 +11,4 @@ openai>=1.45.0
 fpdf2>=2.7.9
 streamlit>=1.38.0
 requests>=2.31.0
+aiofiles>=23.0.0

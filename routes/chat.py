@@ -32,12 +32,6 @@ class StatusResponse(BaseModel):
 # Routes
 # ---------------------------------------------------------------------------
 
-@router.get("/", response_model=StatusResponse, tags=["Health"])
-async def root() -> StatusResponse:
-    """Basic liveness check."""
-    return StatusResponse(status="running")
-
-
 @router.get("/health", response_model=StatusResponse, tags=["Health"])
 async def health() -> StatusResponse:
     """Detailed health check — confirms the vector store is loaded."""
